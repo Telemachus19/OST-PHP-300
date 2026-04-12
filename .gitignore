@@ -1,0 +1,2 @@
+# Ignore local custom Apache/PHP image setup
+/docker/php-apache/
