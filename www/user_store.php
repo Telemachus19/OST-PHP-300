@@ -13,11 +13,11 @@ function get_pdo(): PDO
         return $pdo;
     }
 
-    $dbName = getenv('DB_NAME') ?: 'app';
-    $dbUser = getenv('DB_USER') ?: 'app';
-    $dbPass = getenv('DB_PASS') ?: 'app';
-    $dbPort = (int) (getenv('DB_PORT') ?: 3306);
-    $dbHost = getenv('DB_HOST') ?: 'db';
+    $dbName =  'app';
+    $dbUser =  'app';
+    $dbPass =  'app';
+    $dbPort =   3306;
+    $dbHost = 'db';
     $dsn = sprintf('mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4', $dbHost, $dbPort, $dbName);
 
     $pdo = new PDO($dsn, $dbUser, $dbPass, [
@@ -72,6 +72,7 @@ function skill_options(): array
 function load_users(): array
 {
     $pdo = get_pdo();
+    // stmt: statement shorthand
     $stmt = $pdo->query(
         'SELECT id, first_name, last_name, address, country, gender, username, department, created_at, updated_at
          FROM users
@@ -113,6 +114,7 @@ function add_user(array $user): string
     $skills = array_values(array_intersect(skill_options(), (array) ($user['skills'] ?? [])));
 
     try {
+        // a transaction to make sure that both user and skills are added together
         $pdo->beginTransaction();
 
         $stmt = $pdo->prepare(
@@ -183,6 +185,7 @@ function update_user(string $id, array $updated): bool
     $skills = array_values(array_intersect(skill_options(), (array) ($updated['skills'] ?? [])));
 
     try {
+        // same same but different
         $pdo->beginTransaction();
 
         $existsStmt = $pdo->prepare('SELECT id FROM users WHERE id = :id LIMIT 1');

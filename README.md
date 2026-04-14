@@ -38,10 +38,9 @@ docker compose up -d --build
 
 ## MySQL Schema
 
-The app now uses MySQL for CRUD operations.
-
 - Schema file: `docker/mysql/init/01-schema.sql`
 - It is applied automatically on first database initialization.
+  - If i forgot to add it before the first run :-)
 
 If your database volume already exists, recreate it to apply init scripts:
 
