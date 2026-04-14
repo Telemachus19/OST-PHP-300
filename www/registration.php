@@ -86,20 +86,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($errors === []) {
-        add_user([
-            'first_name' => $values['first_name'],
-            'last_name' => $values['last_name'],
-            'address' => $values['address'],
-            'country' => $values['country'],
-            'gender' => $values['gender'],
-            'skills' => $values['skills'],
-            'username' => $values['username'],
-            'department' => $values['department'],
-        ]);
-        unset($_SESSION['captcha_code']);
-        unset($_SESSION['registration_form']);
-        header('Location: listUsers.php');
-        exit;
+        try {
+            add_user([
+                'first_name' => $values['first_name'],
+                'last_name' => $values['last_name'],
+                'address' => $values['address'],
+                'country' => $values['country'],
+                'gender' => $values['gender'],
+                'skills' => $values['skills'],
+                'username' => $values['username'],
+                'department' => $values['department'],
+            ]);
+            unset($_SESSION['captcha_code']);
+            unset($_SESSION['registration_form']);
+            header('Location: listUsers.php');
+            exit;
+        } catch (InvalidArgumentException $e) {
+            $errors['username'] = $e->getMessage();
+        }
     }
 
     $_SESSION['registration_form'] = $values;

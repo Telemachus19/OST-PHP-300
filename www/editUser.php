@@ -71,19 +71,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($errors === []) {
-        update_user($id, [
-            'first_name' => $values['first_name'],
-            'last_name' => $values['last_name'],
-            'address' => $values['address'],
-            'country' => $values['country'],
-            'gender' => $values['gender'],
-            'skills' => $values['skills'],
-            'username' => $values['username'],
-            'department' => $values['department'],
-        ]);
+        try {
+            update_user($id, [
+                'first_name' => $values['first_name'],
+                'last_name' => $values['last_name'],
+                'address' => $values['address'],
+                'country' => $values['country'],
+                'gender' => $values['gender'],
+                'skills' => $values['skills'],
+                'username' => $values['username'],
+                'department' => $values['department'],
+            ]);
 
-        header('Location: viewUser.php?id=' . urlencode($id));
-        exit;
+            header('Location: viewUser.php?id=' . urlencode($id));
+            exit;
+        } catch (InvalidArgumentException $e) {
+            $errors['username'] = $e->getMessage();
+        }
     }
 }
 ?>

@@ -1,1 +1,18 @@
-[]
+[
+    {
+        "first_name": "abc",
+        "last_name": "a",
+        "address": "a",
+        "country": "Egypt",
+        "gender": "Male",
+        "skills": [
+            "J2SE",
+            "MySQL"
+        ],
+        "username": "a",
+        "department": "open",
+        "id": "usr_69db84ad656d21.20143084",
+        "created_at": "2026-04-12 11:40:29",
+        "updated_at": "2026-04-12 11:46:54"
+    }
+]

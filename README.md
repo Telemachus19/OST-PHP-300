@@ -9,7 +9,7 @@ This stack replicates the core XAMPP experience using Docker:
 ## Services and Ports
 
 - Website: `http://localhost`
-- phpMyAdmin: `http://localhost:8080`
+- phpMyAdmin: `http://localhost:8081`
 - MariaDB: `localhost:3306`
 
 ## PHP Pages
@@ -33,6 +33,20 @@ This stack replicates the core XAMPP experience using Docker:
 ## Run
 
 ```bash
+docker compose up -d --build
+```
+
+## MySQL Schema
+
+The app now uses MySQL for CRUD operations.
+
+- Schema file: `docker/mysql/init/01-schema.sql`
+- It is applied automatically on first database initialization.
+
+If your database volume already exists, recreate it to apply init scripts:
+
+```bash
+docker compose down -v
 docker compose up -d --build
 ```
 

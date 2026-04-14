@@ -25,13 +25,14 @@ services:
       MYSQL_PASSWORD: app
     volumes:
       - db_data:/var/lib/mysql
+      - ./docker/mysql/init:/docker-entrypoint-initdb.d:ro
 
   phpmyadmin:
     image: phpmyadmin:5.2-apache
     container_name: xampp-phpmyadmin
     restart: unless-stopped
     ports:
-      - "8080:80"
+      - "8081:80"
     environment:
       PMA_HOST: db
       PMA_PORT: 3306
