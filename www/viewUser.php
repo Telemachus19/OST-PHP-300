@@ -2,6 +2,9 @@
 session_start();
 require_once __DIR__ . '/user_store.php';
 
+require_authentication();
+$loggedInUsername = current_username();
+
 $id = trim($_GET['id'] ?? '');
 $user = $id === '' ? null : find_user($id);
 
@@ -22,6 +25,13 @@ $skills = (array) ($user['skills'] ?? []);
 </head>
 <body class="bg-light">
     <div class="container py-4">
+        <div class="d-flex justify-content-end mb-3">
+            <div class="d-flex align-items-center gap-2">
+                <span class="text-muted">Logged in as <strong><?php echo h((string) $loggedInUsername); ?></strong></span>
+                <a class="btn btn-sm btn-outline-danger" href="logout.php">Logout</a>
+            </div>
+        </div>
+
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h1 class="h5 mb-0">User Details</h1>
@@ -35,6 +45,16 @@ $skills = (array) ($user['skills'] ?? []);
                     <div class="col-md-6">
                         <div class="text-muted small">First Name</div>
                         <div><?php echo h($user['first_name'] ?? ''); ?></div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="text-muted small">Profile Picture</div>
+                        <div>
+                            <?php if (!empty($user['profile_picture_path'])): ?>
+                                <img src="<?php echo h((string) $user['profile_picture_path']); ?>" alt="Profile picture" class="img-thumbnail" style="max-width: 180px;">
+                            <?php else: ?>
+                                <span class="text-muted">No image uploaded.</span>
+                            <?php endif; ?>
+                        </div>
                     </div>
                     <div class="col-md-6">
                         <div class="text-muted small">Last Name</div>

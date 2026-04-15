@@ -2,6 +2,8 @@
 session_start();
 require_once __DIR__ . '/user_store.php';
 
+$loggedInUsername = current_username();
+
 $captchaCode = $_SESSION['captcha_code'] ?? '';
 if ($captchaCode === '') {
     $captchaCode = strtoupper(substr(bin2hex(random_bytes(3)), 0, 6));
@@ -19,6 +21,7 @@ $defaults = [
     'skills' => ['J2SE', 'MySQL'],
     'username' => '',
     'department' => '',
+    'password' => '',
     'captcha' => '',
 ];
 
@@ -40,43 +43,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'skills' => array_values(array_intersect($skillOptions, (array) ($_POST['skills'] ?? []))),
         'username' => trim($_POST['username'] ?? ''),
         'department' => trim($_POST['department'] ?? ''),
+        'password' => (string) ($_POST['password'] ?? ''),
         'captcha' => trim($_POST['captcha'] ?? ''),
     ];
 
-    if ($values['first_name'] === '') {
-        $errors['first_name'] = 'First Name is required.';
-    }
+    $errors = validate_user_payload($values, true);
 
-    if ($values['last_name'] === '') {
-        $errors['last_name'] = 'Last Name is required.';
-    }
-
-    if ($values['address'] === '') {
-        $errors['address'] = 'Address is required.';
-    }
-
-    if ($values['country'] === '' || $values['country'] === 'Select Country') {
-        $errors['country'] = 'Please select a country.';
-    }
-
-    if ($values['gender'] !== 'Male' && $values['gender'] !== 'Female') {
-        $errors['gender'] = 'Gender is required.';
-    }
-
-    if ($values['skills'] === []) {
-        $errors['skills'] = 'Select at least one skill.';
-    }
-
-    if ($values['username'] === '') {
-        $errors['username'] = 'Username is required.';
-    }
-
-    if (trim($_POST['password'] ?? '') === '') {
-        $errors['password'] = 'Password is required.';
-    }
-
-    if ($values['department'] === '') {
-        $errors['department'] = 'Department is required.';
+    $uploadError = validate_profile_picture_upload($_FILES['profile_picture'] ?? null);
+    if ($uploadError !== null) {
+        $errors['profile_picture'] = $uploadError;
     }
 
     if ($values['captcha'] === '') {
@@ -86,7 +61,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($errors === []) {
+        $profilePicturePath = null;
         try {
+            $profilePicturePath = store_profile_picture($_FILES['profile_picture'] ?? null);
+
             add_user([
                 'first_name' => $values['first_name'],
                 'last_name' => $values['last_name'],
@@ -96,17 +74,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'skills' => $values['skills'],
                 'username' => $values['username'],
                 'department' => $values['department'],
+                'password' => $values['password'],
+                'profile_picture_path' => $profilePicturePath,
             ]);
             unset($_SESSION['captcha_code']);
             unset($_SESSION['registration_form']);
-            header('Location: listUsers.php');
+            header('Location: login.php');
             exit;
         } catch (InvalidArgumentException $e) {
-            $errors['username'] = $e->getMessage();
+            if ($profilePicturePath !== null) {
+                delete_profile_picture($profilePicturePath);
+            }
+
+            if ($e->getMessage() === 'Username already exists.') {
+                $errors['username'] = $e->getMessage();
+            } else {
+                $errors['password'] = $e->getMessage();
+            }
+        } catch (RuntimeException $e) {
+            if ($profilePicturePath !== null) {
+                delete_profile_picture($profilePicturePath);
+            }
+
+            $errors['profile_picture'] = $e->getMessage();
         }
     }
 
-    $_SESSION['registration_form'] = $values;
+    $sessionValues = $values;
+    $sessionValues['password'] = '';
+    $_SESSION['registration_form'] = $sessionValues;
 }
 
 ?>
@@ -120,6 +116,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </head>
 <body class="bg-light">
     <div class="container py-4">
+        <?php if ($loggedInUsername !== null): ?>
+            <div class="d-flex justify-content-end mb-3">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="text-muted">Logged in as <strong><?php echo h($loggedInUsername); ?></strong></span>
+                    <a class="btn btn-sm btn-outline-danger" href="logout.php">Logout</a>
+                </div>
+            </div>
+        <?php endif; ?>
+
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h1 class="h3 mb-0">Registration Form</h1>
             <a class="btn btn-outline-secondary" href="listUsers.php">Users List</a>
@@ -132,7 +137,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         <?php endif; ?>
 
-        <form id="registrationForm" method="post" action="registration.php" novalidate class="card card-body bg-white">
+        <form id="registrationForm" method="post" action="registration.php" enctype="multipart/form-data" novalidate class="card card-body bg-white">
             <div class="mb-3">
                 <label for="first_name" class="form-label">First Name</label>
                 <input type="text" class="form-control <?php echo isset($errors['first_name']) ? 'is-invalid' : ''; ?>" id="first_name" name="first_name" value="<?php echo h($values['first_name']); ?>" required>
@@ -196,12 +201,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <label for="password" class="form-label">Password</label>
                 <input type="password" class="form-control <?php echo isset($errors['password']) ? 'is-invalid' : ''; ?>" id="password" name="password" required>
                 <div class="invalid-feedback d-block" id="password_error"><?php echo h($errors['password'] ?? ''); ?></div>
+                <div class="form-text">Minimum 8 characters. Allowed: lowercase letters, numbers, underscore.</div>
             </div>
 
             <div class="mb-3">
                 <label for="department" class="form-label">Department</label>
                 <input type="text" class="form-control <?php echo isset($errors['department']) ? 'is-invalid' : ''; ?>" id="department" name="department" placeholder="OpenSource" value="<?php echo h($values['department']); ?>" required>
                 <div class="invalid-feedback d-block" id="department_error"><?php echo h($errors['department'] ?? ''); ?></div>
+            </div>
+
+            <div class="mb-3">
+                <label for="profile_picture" class="form-label">Profile Picture</label>
+                <input type="file" class="form-control <?php echo isset($errors['profile_picture']) ? 'is-invalid' : ''; ?>" id="profile_picture" name="profile_picture" accept=".jpg,.jpeg,.png,image/jpeg,image/png">
+                <div class="invalid-feedback d-block" id="profile_picture_error"><?php echo h($errors['profile_picture'] ?? ''); ?></div>
+                <div class="form-text">Optional. JPG or PNG only. Maximum 5 MB.</div>
             </div>
 
             <div class="mb-3">
@@ -220,6 +233,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 
     <script>
+        const MAX_PROFILE_BYTES = 5 * 1024 * 1024;
+        const ALLOWED_PROFILE_TYPES = ['image/jpeg', 'image/png'];
+
         document.getElementById('registrationForm').addEventListener('submit', function (event) {
             const errors = [];
             const requiredFields = ['first_name', 'last_name', 'address', 'username', 'password', 'department', 'captcha'];
@@ -246,6 +262,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 errors.push('skills');
             }
 
+            const firstName = document.getElementById('first_name').value.trim();
+            if (/\d/.test(firstName)) {
+                errors.push('first_name_number');
+            }
+
+            const lastName = document.getElementById('last_name').value.trim();
+            if (/\d/.test(lastName)) {
+                errors.push('last_name_number');
+            }
+
+            const password = document.getElementById('password').value;
+            if (password.length > 0) {
+                if (password.length < 8) {
+                    errors.push('password_length');
+                }
+                if (/[A-Z]/.test(password)) {
+                    errors.push('password_uppercase');
+                }
+                if (!/^[a-z0-9_]+$/.test(password)) {
+                    errors.push('password_charset');
+                }
+            }
+
+            const profilePicture = document.getElementById('profile_picture');
+            if (profilePicture.files.length > 0) {
+                const file = profilePicture.files[0];
+                if (!ALLOWED_PROFILE_TYPES.includes(file.type)) {
+                    errors.push('profile_picture_type');
+                }
+                if (file.size > MAX_PROFILE_BYTES) {
+                    errors.push('profile_picture_size');
+                }
+            }
+
             const captchaValue = document.getElementById('captcha').value.trim();
             const captchaCode = document.querySelector('.alert.alert-secondary').textContent.trim();
             if (captchaValue !== captchaCode) {
@@ -259,10 +309,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (errors.length > 0) {
                 event.preventDefault();
                 errors.forEach(function (field) {
-                    const errorNode = document.getElementById(field + '_error');
+                    let errorId = field + '_error';
+                    if (field === 'first_name_number') {
+                        errorId = 'first_name_error';
+                    }
+                    if (field === 'last_name_number') {
+                        errorId = 'last_name_error';
+                    }
+                    if (field === 'password_length' || field === 'password_uppercase' || field === 'password_charset') {
+                        errorId = 'password_error';
+                    }
+                    if (field === 'profile_picture_type' || field === 'profile_picture_size') {
+                        errorId = 'profile_picture_error';
+                    }
+
+                    const errorNode = document.getElementById(errorId);
                     if (errorNode) {
                         if (field === 'captcha') {
                             errorNode.textContent = 'CAPTCHA does not match.';
+                        } else if (field === 'first_name_number') {
+                            errorNode.textContent = 'First Name must not contain numbers.';
+                        } else if (field === 'last_name_number') {
+                            errorNode.textContent = 'Last Name must not contain numbers.';
+                        } else if (field === 'password_length') {
+                            errorNode.textContent = 'Password must be at least 8 characters.';
+                        } else if (field === 'password_uppercase') {
+                            errorNode.textContent = 'Password must not contain uppercase letters.';
+                        } else if (field === 'password_charset') {
+                            errorNode.textContent = 'Password can contain only lowercase letters, numbers, and underscore.';
+                        } else if (field === 'profile_picture_type') {
+                            errorNode.textContent = 'Profile picture must be JPG or PNG.';
+                        } else if (field === 'profile_picture_size') {
+                            errorNode.textContent = 'Profile picture must be 5 MB or less.';
                         } else if (field === 'skills') {
                             errorNode.textContent = 'Select at least one skill.';
                         } else if (field === 'gender') {

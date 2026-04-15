@@ -2,6 +2,9 @@
 session_start();
 require_once __DIR__ . '/user_store.php';
 
+require_authentication();
+$loggedInUsername = current_username();
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delete') {
     $id = trim($_POST['id'] ?? '');
     if ($id !== '') {
@@ -24,8 +27,14 @@ $users = load_users();
 <body class="bg-light">
     <div class="container py-4">
         <div class="d-flex justify-content-between align-items-center mb-3">
-            <h1 class="h3 mb-0">Registered Users</h1>
-            <a class="btn btn-primary" href="registration.php">New Registration</a>
+            <div>
+                <h1 class="h3 mb-0">Registered Users</h1>
+                <p class="mb-0 text-muted small">Logged in as <strong><?php echo h((string) $loggedInUsername); ?></strong></p>
+            </div>
+            <div class="d-flex gap-2">
+                <a class="btn btn-primary" href="registration.php">New Registration</a>
+                <a class="btn btn-outline-danger" href="logout.php">Logout</a>
+            </div>
         </div>
 
         <?php if ($users === []): ?>
@@ -35,6 +44,7 @@ $users = load_users();
                 <table class="table table-striped table-bordered bg-white align-middle">
                     <thead class="table-dark">
                         <tr>
+                            <th>Photo</th>
                             <th>Name</th>
                             <th>Username</th>
                             <th>Country</th>
@@ -46,6 +56,13 @@ $users = load_users();
                     <tbody>
                         <?php foreach ($users as $user): ?>
                             <tr>
+                                <td>
+                                    <?php if (!empty($user['profile_picture_path'])): ?>
+                                        <img src="<?php echo h((string) $user['profile_picture_path']); ?>" alt="Profile" class="rounded" style="width: 48px; height: 48px; object-fit: cover;">
+                                    <?php else: ?>
+                                        <span class="text-muted small">No Image</span>
+                                    <?php endif; ?>
+                                </td>
                                 <td><?php echo h(trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? ''))); ?></td>
                                 <td><?php echo h($user['username'] ?? ''); ?></td>
                                 <td><?php echo h($user['country'] ?? ''); ?></td>
