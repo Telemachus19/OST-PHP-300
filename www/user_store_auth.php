@@ -31,7 +31,7 @@ function authenticate_user(string $username, string $password): ?array
         return null;
     }
 
-    $pdo = get_pdo();
+    $pdo = DBConnection::getInstance();
     $stmt = $pdo->prepare(
         'SELECT id, username, password_hash
          FROM users

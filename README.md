@@ -40,7 +40,17 @@ docker compose up -d --build
 
 - Schema file: `docker/mysql/init/01-schema.sql`
 - It is applied automatically on first database initialization.
-  - If i forgot to add it before the first run :-)
+  - If i forgot to add it before the first run 🙂
+  - If it doesn't work for some reason, you can apply it manually:
+    1. Connect to the database:
+       ```bash
+       docker compose exec db mysql -u root -p
+       ```
+       (password: `root`)
+    2. Run the schema SQL:
+       ```sql
+       source /docker-entrypoint-initdb.d/01-schema.sql;
+       ```
 
 If your database volume already exists, recreate it to apply init scripts:
 

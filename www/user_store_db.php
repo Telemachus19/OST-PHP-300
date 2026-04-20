@@ -1,25 +1,47 @@
 <?php
 
-function get_pdo(): PDO
+final class DBConnection
 {
-    static $pdo = null;
+    private static ?PDO $pdo = null;
 
-    if ($pdo instanceof PDO) {
-        return $pdo;
+    private function __construct()
+    {
     }
 
-    $dbName = 'app';
-    $dbUser = 'app';
-    $dbPass = 'app';
-    $dbPort = 3306;
-    $dbHost = 'db';
-    $dsn = sprintf('mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4', $dbHost, $dbPort, $dbName);
+    public static function getInstance(): PDO
+    {
+        if (self::$pdo instanceof PDO) {
+            return self::$pdo;
+        }
 
-    $pdo = new PDO($dsn, $dbUser, $dbPass, [
-        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-        PDO::ATTR_EMULATE_PREPARES => false,
-    ]);
+        $dsn = sprintf(
+            'mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4',
+            DB_HOST,
+            DB_PORT,
+            DB_NAME
+        );
 
-    return $pdo;
+        self::$pdo = new PDO($dsn, DB_USER, DB_PASS, [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            PDO::ATTR_EMULATE_PREPARES => false,
+        ]);
+
+        return self::$pdo;
+    }
+
+    private function __clone()
+    {
+    }
+
+    public function __wakeup(): void
+    {
+        throw new LogicException('Cannot unserialize singleton.');
+    }
+}
+
+// Temporary compatibility wrapper (to make that i forgot something, nothing breaks really badly)
+function get_pdo(): PDO
+{
+    return DBConnection::getInstance();
 }

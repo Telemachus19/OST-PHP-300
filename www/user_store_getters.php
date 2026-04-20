@@ -8,7 +8,7 @@ function countries(): array
         return $options;
     }
 
-    $pdo = get_pdo();
+    $pdo = DBConnection::getInstance();
     $stmt = $pdo->query('SELECT name FROM countries ORDER BY name ASC');
     $rows = array_column($stmt->fetchAll(), 'name');
     $options = array_merge(['Select Country'], $rows);
@@ -24,7 +24,7 @@ function skill_options(): array
         return $options;
     }
 
-    $pdo = get_pdo();
+    $pdo = DBConnection::getInstance();
     $stmt = $pdo->query('SELECT name FROM skills ORDER BY name ASC');
     $options = array_column($stmt->fetchAll(), 'name');
 

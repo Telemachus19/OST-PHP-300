@@ -2,7 +2,7 @@
 
 function load_users(): array
 {
-    $pdo = get_pdo();
+    $pdo = DBConnection::getInstance();
     $stmt = $pdo->query(
         'SELECT u.id,
                 u.first_name,
@@ -57,7 +57,7 @@ function make_user_id(): string
 
 function add_user(array $user): string
 {
-    $pdo = get_pdo();
+    $pdo = DBConnection::getInstance();
     $id = make_user_id();
     $skills = array_values(array_intersect(skill_options(), (array) ($user['skills'] ?? [])));
     $password = (string) ($user['password'] ?? '');
@@ -125,7 +125,7 @@ function add_user(array $user): string
 
 function find_user(string $id): ?array
 {
-    $pdo = get_pdo();
+    $pdo = DBConnection::getInstance();
     $stmt = $pdo->prepare(
         'SELECT u.id,
                 u.first_name,
@@ -166,7 +166,7 @@ function find_user(string $id): ?array
 
 function update_user(string $id, array $updated): bool
 {
-    $pdo = get_pdo();
+    $pdo = DBConnection::getInstance();
     $skills = array_values(array_intersect(skill_options(), (array) ($updated['skills'] ?? [])));
     $shouldUpdatePicture = array_key_exists('profile_picture_path', $updated);
 
@@ -257,7 +257,7 @@ function delete_user(string $id): bool
 {
     $existing = find_user($id);
 
-    $pdo = get_pdo();
+    $pdo = DBConnection::getInstance();
     $stmt = $pdo->prepare('DELETE FROM users WHERE id = :id');
     $stmt->execute(['id' => $id]);
 
