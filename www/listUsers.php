@@ -33,6 +33,7 @@ $users = load_users();
             </div>
             <div class="d-flex gap-2">
                 <a class="btn btn-primary" href="registration.php">New Registration</a>
+                <a class="btn btn-outline-primary" href="products.php">Products</a>
                 <a class="btn btn-outline-danger" href="logout.php">Logout</a>
             </div>
         </div>
