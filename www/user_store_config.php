@@ -9,3 +9,6 @@ define('DB_PORT', 3306);
 define('DB_NAME', 'app');
 define('DB_USER', 'app');
 define('DB_PASS', 'app');
+
+define('JWT_SECRET', getenv('JWT_SECRET') ?: 'change-this-in-production');
+define('JWT_TTL_SECONDS', (int) (getenv('JWT_TTL_SECONDS') ?: 3600));

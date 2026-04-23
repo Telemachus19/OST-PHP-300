@@ -268,3 +268,106 @@ function delete_user(string $id): bool
 
     return $deleted;
 }
+
+function load_posts(): array
+{
+    $pdo = DBConnection::getInstance();
+    $stmt = $pdo->query(
+        'SELECT id, title, content, user_id, created_at, updated_at
+         FROM posts
+         ORDER BY created_at DESC'
+    );
+
+    return $stmt->fetchAll();
+}
+
+function find_post(int $id): ?array
+{
+    $pdo = DBConnection::getInstance();
+    $stmt = $pdo->prepare(
+        'SELECT id, title, content, user_id, created_at, updated_at
+         FROM posts
+         WHERE id = :id
+         LIMIT 1'
+    );
+    $stmt->execute(['id' => $id]);
+    $post = $stmt->fetch();
+
+    return $post === false ? null : $post;
+}
+
+function create_post(string $title, string $content, string $userId): array
+{
+    $pdo = DBConnection::getInstance();
+    $stmt = $pdo->prepare(
+        'INSERT INTO posts (title, content, user_id)
+         VALUES (:title, :content, :user_id)'
+    );
+    $stmt->execute([
+        'title' => $title,
+        'content' => $content,
+        'user_id' => $userId,
+    ]);
+
+    $id = (int) $pdo->lastInsertId();
+    $post = find_post($id);
+    if ($post === null) {
+        throw new RuntimeException('Failed to load created post.');
+    }
+
+    return $post;
+}
+
+function update_post(int $id, string $title, string $content, string $userId): array
+{
+    $existing = find_post($id);
+    if ($existing === null) {
+        return ['status' => 'not_found'];
+    }
+
+    if ((string) $existing['user_id'] !== $userId) {
+        return ['status' => 'forbidden'];
+    }
+
+    $pdo = DBConnection::getInstance();
+    $stmt = $pdo->prepare(
+        'UPDATE posts
+         SET title = :title,
+             content = :content,
+             updated_at = NOW()
+         WHERE id = :id'
+    );
+    $stmt->execute([
+        'id' => $id,
+        'title' => $title,
+        'content' => $content,
+    ]);
+
+    $updated = find_post($id);
+    if ($updated === null) {
+        throw new RuntimeException('Failed to load updated post.');
+    }
+
+    return [
+        'status' => 'ok',
+        'post' => $updated,
+    ];
+}
+
+function delete_post(int $id, string $userId): array
+{
+    $existing = find_post($id);
+    if ($existing === null) {
+        return ['status' => 'not_found'];
+    }
+
+    if ((string) $existing['user_id'] !== $userId) {
+        return ['status' => 'forbidden'];
+    }
+
+    $pdo = DBConnection::getInstance();
+    $stmt = $pdo->prepare('DELETE FROM posts WHERE id = :id');
+    $stmt->execute(['id' => $id]);
+
+    return ['status' => 'ok'];
+}

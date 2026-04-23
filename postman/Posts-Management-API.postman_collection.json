@@ -1,0 +1,233 @@
+{
+  "info": {
+    "_postman_id": "5d2b1b4b-0e7d-49f2-bfc8-c6fd08a1dfee",
+    "name": "Posts Management API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Collection for testing Posts Management API with JWT auth."
+  },
+  "item": [
+    {
+      "name": "Auth - Login",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"{{username}}\",\n  \"password\": \"{{password}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/login",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "auth", "login"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "const json = pm.response.json();",
+              "pm.test('Response has JWT token', function () {",
+              "  pm.expect(json.success).to.eql(true);",
+              "  pm.expect(json.data.token).to.be.a('string');",
+              "});",
+              "pm.collectionVariables.set('token', json.data.token);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Posts - Get All (Public)",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/api/posts",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "posts"]
+        }
+      }
+    },
+    {
+      "name": "Posts - Create (Protected)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Postman Created Post\",\n  \"content\": \"Created from Postman collection\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/posts",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "posts"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 201', function () {",
+              "  pm.response.to.have.status(201);",
+              "});",
+              "const json = pm.response.json();",
+              "pm.collectionVariables.set('postId', String(json.data.id));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Posts - Get By ID (Public)",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/api/posts/{{postId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "posts", "{{postId}}"]
+        }
+      }
+    },
+    {
+      "name": "Posts - Update (Protected)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Postman Updated Post\",\n  \"content\": \"Updated from Postman collection\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/posts/{{postId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "posts", "{{postId}}"]
+        }
+      }
+    },
+    {
+      "name": "Posts - Delete (Protected)",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/posts/{{postId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "posts", "{{postId}}"]
+        }
+      }
+    },
+    {
+      "name": "Posts - Validation Error 422",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"content\": \"Missing title\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/posts",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "posts"]
+        }
+      }
+    },
+    {
+      "name": "Posts - Unauthorized 401",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"No token\",\n  \"content\": \"Should fail\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/posts",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "posts"]
+        }
+      }
+    },
+    {
+      "name": "Posts - Not Found 404",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/api/posts/999999",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "posts", "999999"]
+        }
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost"
+    },
+    {
+      "key": "username",
+      "value": "apitest"
+    },
+    {
+      "key": "password",
+      "value": "password123"
+    },
+    {
+      "key": "token",
+      "value": ""
+    },
+    {
+      "key": "postId",
+      "value": ""
+    }
+  ]
+}

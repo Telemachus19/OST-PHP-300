@@ -137,3 +137,22 @@ function validate_profile_picture_upload(?array $file): ?string
 
     return null;
 }
+
+function validate_post_payload(array $values): array
+{
+    $errors = [];
+    $title = trim((string) ($values['title'] ?? ''));
+    $content = trim((string) ($values['content'] ?? ''));
+
+    if ($title === '') {
+        $errors['title'][] = 'The title field is required.';
+    } elseif (mb_strlen($title) < 5) {
+        $errors['title'][] = 'The title must be at least 5 characters.';
+    }
+
+    if ($content === '') {
+        $errors['content'][] = 'The content field is required.';
+    }
+
+    return $errors;
+}

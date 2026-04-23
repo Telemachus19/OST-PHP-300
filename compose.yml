@@ -4,6 +4,9 @@ services:
       context: .
       dockerfile: docker/php-apache/Dockerfile
     container_name: xampp-web
+    environment:
+      JWT_SECRET: super-secret-change-this
+      JWT_TTL_SECONDS: 3600
     ports:
       - "80:80"
     volumes:
